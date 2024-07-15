@@ -1,29 +1,31 @@
 trigger:
-- main
+  - main
+
 pool:
- vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-latest'
+
 steps:
-- script: |
-   response=$(curl -u akashdubey2:S51t45b15qvwFVjpnSDs -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${36ab0b5d8d90bb1d3a34e6f6aa30267d8a4e32b8}/run)
-   BUILD_ID=$(echo $response | jq -r '.build_id')
-   echo "Build ID: $BUILD_ID"
-- displayName: 'Trigger Test Suite'
-- script: |
-   buildStatus=""
-   retryInterval=30
-   while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
-     response=$(curl -u akashdubey2:S51t45b15qvwFVjpnSDs -s https://lcnc-api.browserstack.com/api/v1/builds/${BUILD_ID}/status)
-     buildStatus=$(echo $response | jq -r '.build_status')
-     sleep $retryInterval
-   done
-   if [[ "$buildStatus" == "passed" ]]; then
-     echo "Build passed"
-     # Add further steps for actions to be taken if build passed
-   elif [[ "$buildStatus" == "failed" ]]; then
-     echo "Build failed"
-     exit 1
-   else
-     echo "Build status unstable"
-     exit 1
-   fi
--  displayName: 'Check Build Status'
+  - script: |
+      response=$(curl -u username:password -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${TEST_SUITE_ID}/run)
+      BUILD_ID=$(echo $response | jq -r '.build_id')
+      echo "Build ID: $BUILD_ID"
+    displayName: 'Trigger Test Suite'
+
+  - script: |
+      buildStatus=""
+      retryInterval=30
+      while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
+        response=$(curl -u username:password https://lcnc-api.browserstack.com/api/v1/builds/${BUILD_ID}/status)
+        buildStatus=$(echo $response | jq -r '.build_status')
+        sleep $retryInterval
+      done
+      if [[ "$buildStatus" == "passed" ]]; then
+        echo "Build passed"
+      elif [[ "$buildStatus" == "failed" ]]; then
+        echo "Build failed"
+        exit 1
+      else
+        echo "Build status unstable"
+        exit 1
+      fi
+    displayName: 'Check Build Status'
