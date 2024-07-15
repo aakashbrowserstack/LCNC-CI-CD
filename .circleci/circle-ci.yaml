@@ -1,0 +1,32 @@
+version: 2.1
+jobs:
+ build:
+   docker:
+     - image: cimg/base:2021.09
+   steps:
+     - run:
+         name: Trigger Test Suite
+         command: |
+           response=$(curl -u $BROWSERSTACK_USERNAME:$BROWSERSTACK_PASSWORD -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${TEST_SUITE_ID}/run)
+           BUILD_ID=$(echo $response | jq -r '.build_id')
+           echo "Build ID: $BUILD_ID"
+     - run:
+         name: Check Build Status
+         command: |
+           buildStatus=""
+           retryInterval=30
+           while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
+             response=$(curl -u $BROWSERSTACK_USERNAME:$BROWSERSTACK_PASSWORD -s https://lcnc-api.browserstack.com/api/v1/builds/${BUILD_ID}/status)
+             buildStatus=$(echo $response | jq -r '.build_status')
+             sleep $retryInterval
+           done
+           if [[ "$buildStatus" == "passed" ]]; then
+             echo "Build passed"
+             # Add further steps for actions to be taken if build passed
+           elif [[ "$buildStatus" == "failed" ]]; then
+             echo "Build failed"
+             exit 1
+           else
+             echo "Build status unstable"
+             exit 1
+           fi
